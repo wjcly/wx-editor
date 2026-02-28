@@ -55,16 +55,6 @@ export default defineConfig({
     devSourcemap: true,
   },
   server: {
-    proxy: {
-      // 代理微信公众号文章请求，使用相对路径 /api/wechat?url=encodedUrl
-      '/api/wechat': {
-        target: 'https://mp.weixin.qq.com',
-        changeOrigin: true,
-        // 移除前缀后保留查询参数，实际请求会是 https://mp.weixin.qq.com?url=...
-        rewrite: (path) => path.replace(/^\/api\/wechat/, ''),
-        secure: false,
-      },
-    },
   },
   build: {
     rollupOptions: {

@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
 import { toast } from '@/composables/useToast'
 import { useStore } from '@/stores'
-import { getWechatConfig } from '@/utils/wechatConfig'
 
 interface CustomNode {
   nodeName: string
@@ -86,19 +85,10 @@ turndownService.addRule(`codeBlock`, {
 })
 
 async function tryFetch(url: string) {
-  // 优先使用用户在微信配置中设置的代理域名（wxProxyConfig）
-  const wechatConfig = getWechatConfig()
-  let proxyUrl: string
-  if (wechatConfig && wechatConfig.proxyOrigin) {
-    // 假设代理服务接受 `?url=` 参数进行转发
-    proxyUrl = `${wechatConfig.proxyOrigin}?url=${encodeURIComponent(url)}`
-    console.log(`使用自定义 wxProxyConfig 代理获取文章:`, proxyUrl)
-  }
-  else {
-    // 回退到 Vite 本地代理
-    proxyUrl = `/api/wechat?url=${encodeURIComponent(url)}`
-    console.log(`使用 Vite 本地代理获取文章:`, proxyUrl)
-  }
+
+  const proxyUrl = `https://cors.wjcly.com?target=${encodeURIComponent(url)}`
+  console.log(`使用自定义 wxProxyConfig 代理获取文章:`, proxyUrl)
+
   const response = await fetch(proxyUrl)
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`)
@@ -138,7 +128,8 @@ async function importFromWechat() {
     currentStep.value = `正在获取文章内容...`
     progress.value = 10
     const html = await tryFetch(url.value)
-    console.log(`获取到原始内容`)
+    console.log(`获取到原始内容`, html)
+    console.log(`内容长度:`, html?.length)
     progress.value = 30
 
     currentStep.value = `正在解析文章...`
@@ -146,6 +137,7 @@ async function importFromWechat() {
     const div = document.createElement(`div`)
     div.innerHTML = html
     console.log(`解析 HTML 完成`)
+    console.log(`HTML 内容预览:`, html.substring(0, 500))
     progress.value = 40
 
     currentStep.value = `正在清理文章格式...`
@@ -222,8 +214,12 @@ async function importFromWechat() {
         imgUrl = `https://images.weserv.nl/?url=${encodeURIComponent(imgUrl)}`
       }
 
-      img.src = imgUrl
+      // 只更新 src，不修改原有样式
+      if (imgUrl) {
+        img.src = imgUrl
+      }
 
+      // 只移除微信特有的 data 属性，保留其他属性
       img.removeAttribute(`data-src`)
       img.removeAttribute(`data-type`)
       img.removeAttribute(`data-w`)
@@ -232,11 +228,6 @@ async function importFromWechat() {
       img.removeAttribute(`data-width`)
       img.removeAttribute(`data-height`)
       img.removeAttribute(`crossorigin`)
-
-      img.style.visibility = `visible`
-      img.style.display = `block`
-      img.style.margin = `0 auto`
-      img.style.maxWidth = `100%`
 
       processedImages++
       progress.value = 70 + Math.floor((processedImages / totalImages) * 15)
@@ -322,11 +313,7 @@ defineExpose({
       </DialogHeader>
 
       <div class="grid gap-4 py-4">
-        <Input
-          v-model="url"
-          placeholder="请输入微信公众号文章链接（以 mp.weixin.qq.com 开头）"
-          :disabled="loading"
-        />
+        <Input v-model="url" placeholder="请输入微信公众号文章链接（以 mp.weixin.qq.com 开头）" :disabled="loading" />
 
         <div v-if="loading" class="space-y-2">
           <div class="flex justify-between text-sm">
