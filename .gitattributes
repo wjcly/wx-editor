@@ -1,0 +1,24 @@
+# 设置文本文件的行结束符处理方式
+* text=auto
+
+# 对于特定类型的文件强制使用LF
+*.vue linguist-language=Vue
+*.js linguist-language=JavaScript
+*.ts linguist-language=TypeScript
+*.json linguist-language=JSON
+*.html linguist-language=HTML
+*.css linguist-language=CSS
+*.md linguist-language=Markdown
+
+# 确保shell脚本和其他Unix工具使用LF
+*.sh eol=lf
+Makefile eol=lf
+
+# 图像等二进制文件保持原样
+* binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
