@@ -377,7 +377,7 @@ async function loadFullPreview(template: Template) {
         <div class="flex flex-col gap-3 md:flex-row md:gap-4">
           <!-- 左侧分类列表 -->
           <Tabs v-model="activeTab" class="w-full border-b pb-0.5 md:w-[180px] md:border-b-0 md:border-r md:pb-0">
-            <TabsList class="custom-scrollbar w-full flex flex-row flex-wrap gap-0.5 overflow-y-auto bg-transparent md:h-[calc(50vh-6rem)] md:flex-col md:flex-nowrap md:gap-2">
+            <TabsList class="custom-scrollbar w-full flex flex-row flex-wrap gap-0.5 overflow-y-auto bg-transparent md:h-[calc(50vh-3rem)] md:flex-col md:flex-nowrap md:gap-2">
               <TabsTrigger
                 v-for="(category, key) in filteredTemplates"
                 :key="key"
@@ -402,7 +402,7 @@ async function loadFullPreview(template: Template) {
             </h3>
             <div
               v-bind="containerProps"
-              class="custom-scrollbar space-y-1 md:space-y-1.5 h-[120px] overflow-y-auto pr-1 md:h-[35vh]"
+              class="custom-scrollbar space-y-1 md:space-y-1.5 overflow-y-auto pr-1 md:h-[40vh]"
             >
               <div v-bind="wrapperProps">
                 <!-- 推荐模板（仅在当前分类是推荐分类时显示） -->
