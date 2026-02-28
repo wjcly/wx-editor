@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // @ts-expect-error - turndown module does not have proper type definitions
 import TurndownService from 'turndown/lib/turndown.es.js'
-import { onBeforeUnmount, ref } from 'vue'
+import { onBeforeUnmount, ref, nextTick } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -145,16 +145,8 @@ async function importFromWechat() {
     // 创建一个临时的 div 来解析 HTML
     const div = document.createElement(`div`)
     div.innerHTML = html
-    console.log(`解析HTML完成`)
+    console.log(`解析 HTML 完成`)
     progress.value = 40
-
-    currentStep.value = `正在格式化HTML内容...`
-    // 引入并使用HTML格式化功能
-    const { formatHtml } = await import(`@/utils/htmlFormatter`)
-    const formattedHtml = formatHtml(html)
-    div.innerHTML = formattedHtml
-    console.log(`格式化HTML完成`)
-    progress.value = 50
 
     currentStep.value = `正在清理文章格式...`
     // 清理一些不需要的元素
@@ -172,7 +164,7 @@ async function importFromWechat() {
       div.querySelectorAll(selector).forEach(el => el.remove())
     })
     console.log(`清理无用元素完成`)
-    progress.value = 60
+    progress.value = 50
 
     // 获取文章标题
     const title = div.querySelector(`#activity-name`)?.textContent?.trim()
@@ -180,43 +172,38 @@ async function importFromWechat() {
       || `导入的文章`
     console.log(`获取到标题:`, title)
 
-    currentStep.value = `正在处理图片...`
-    // 获取文章内容
-    const content = div.querySelector(`#js_content`)
+    currentStep.value = `正在查找文章内容...`
+    // 获取文章内容 - 使用多个 fallback 选择器（增加更多选择器以兼容不同排版）
+    let content: Element | null = div.querySelector(`#js_content`)
       || div.querySelector(`article`)
       || div.querySelector(`.rich_media_content`)
+      || div.querySelector(`.rich_media_area_primary`)
+      || div.querySelector(`#js_article`)
+
+    // 如果仍然找不到，尝试查找包含大量内容的 div
+    if (!content) {
+      const allDivs = div.querySelectorAll(`div`)
+      let maxContentLength = 0
+      let bestDiv: Element | null = null
+      for (const d of allDivs) {
+        const textLen = d.textContent?.length || 0
+        if (textLen > maxContentLength && textLen > 500) {
+          maxContentLength = textLen
+          bestDiv = d
+        }
+      }
+      if (bestDiv) {
+        content = bestDiv
+      }
+    }
+
     if (!content) {
       throw new Error(`无法找到文章内容，请确保链接正确且文章可访问`)
     }
     console.log(`获取到文章内容`)
-    progress.value = 70
+    progress.value = 60
 
-    // 清理内容中的多余空白和特殊属性
-    content.innerHTML = content.innerHTML
-      .replace(/\n\s*\n/g, `\n`)
-      .replace(/^\s+|\s+$/g, ``)
-      .replace(/<p>\s*<\/p>/g, ``)
-      .replace(/<div>\s*<\/div>/g, ``)
-      // 移除可能影响选择的属性
-      .replace(/contenteditable="[^"]*"/gi, ``)
-      .replace(/unselectable="[^"]*"/gi, ``)
-      .replace(/user-select:[^;"]*;?/gi, ``)
-      .replace(/-webkit-user-select:[^;"]*;?/gi, ``)
-      .replace(/-moz-user-select:[^;"]*;?/gi, ``)
-      .replace(/-ms-user-select:[^;"]*;?/gi, ``)
-      // 移除微信特有的属性
-      .replace(/data-tools="[^"]*"/gi, ``)
-      .replace(/data-brushtype="[^"]*"/gi, ``)
-      .replace(/data-brushsize="[^"]*"/gi, ``)
-      .replace(/data-tools-id="[^"]*"/gi, ``)
-      // 移除事件处理器
-      .replace(/on\w+="[^"]*"/gi, ``)
-
-    // 保留元素的原始样式和类（微信端对大多数样式容忍，保持原样即可）
-    // 如有特殊需求可在此处自行处理
-    // 这里不再遍历并删除 user-select、class 等属性，以避免不必要的样式丢失
-
-    // 处理图片
+    currentStep.value = `正在处理图片...`
     const images = content.querySelectorAll(`img`)
     const totalImages = images.length
     let processedImages = 0
@@ -256,12 +243,12 @@ async function importFromWechat() {
     }
     console.log(`处理图片完成`)
 
-    currentStep.value = `正在生成HTML内容...`
+    currentStep.value = `正在生成 HTML 内容...`
     progress.value = 90
 
     // 生成 HTML 内容（使用标题和处理后的内容）
     const htmlContent = `<h1>${title}</h1>${content.innerHTML}`
-    console.log(`生成HTML完成`)
+    console.log(`生成 HTML 完成`)
     progress.value = 95
 
     currentStep.value = `正在更新编辑器...`
@@ -302,7 +289,7 @@ async function importFromWechat() {
   }
   catch (error) {
     console.error(`导入失败:`, error)
-    toast.error(`导入失败: ${(error as Error).message}`)
+    toast.error(`导入失败：${(error as Error).message}`)
   }
   finally {
     loading.value = false

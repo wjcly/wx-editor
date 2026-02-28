@@ -377,7 +377,7 @@ async function loadFullPreview(template: Template) {
         <div class="flex flex-col gap-3 md:flex-row md:gap-4">
           <!-- 左侧分类列表 -->
           <Tabs v-model="activeTab" class="w-full border-b pb-0.5 md:w-[180px] md:border-b-0 md:border-r md:pb-0">
-            <TabsList class="custom-scrollbar h-[60px] w-full flex flex-row flex-wrap gap-0.5 overflow-y-auto bg-transparent md:h-[calc(50vh-6rem)] md:flex-col md:flex-nowrap md:gap-2">
+            <TabsList class="custom-scrollbar w-full flex flex-row flex-wrap gap-0.5 overflow-y-auto bg-transparent md:h-[calc(50vh-6rem)] md:flex-col md:flex-nowrap md:gap-2">
               <TabsTrigger
                 v-for="(category, key) in filteredTemplates"
                 :key="key"
@@ -469,7 +469,7 @@ async function loadFullPreview(template: Template) {
                 复制模板
               </Button>
             </div>
-            <div class="h-[160px] overflow-y-auto border rounded-lg p-3 md:h-[35vh] md:p-4">
+            <div class="custom-scrollbar h-[160px] overflow-y-auto border rounded-lg p-3 md:h-[35vh] md:p-4">
               <div v-if="selectedTemplate && !isLoading" class="prose prose-sm md:prose-base dark:prose-invert max-w-none" v-html="previewHtml" />
               <div v-else-if="isLoading" class="text-muted-foreground h-full flex items-center justify-center">
                 <div class="text-center">
@@ -522,33 +522,7 @@ async function loadFullPreview(template: Template) {
 </template>
 
 <style scoped>
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: var(--scrollbar) transparent;
-  -webkit-overflow-scrolling: touch;
-}
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: var(--scrollbar);
-  border-radius: 2px;
-}
-
-.custom-scrollbar:hover::-webkit-scrollbar-thumb {
-  background-color: var(--scrollbar-hover, var(--scrollbar));
-}
-
-.custom-scrollbar {
-  scrollbar-gutter: stable;
-  padding-right: 2px;
-}
 
 .prose {
   max-width: none;
@@ -570,5 +544,13 @@ async function loadFullPreview(template: Template) {
   border: 1px solid var(--border);
   padding: 0.5rem;
   text-align: left;
+}
+.custom-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 </style>

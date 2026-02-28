@@ -483,18 +483,13 @@ function cancelEditing() {
     </DialogContent>
   </Dialog>
 </template>
-
 <style scoped>
 .custom-scrollbar {
-  /* 隐藏滚动条 */
-  -ms-overflow-style: none;
-  /* IE 和 Edge */
-  scrollbar-width: none;
-  /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  display: none;
-  /* Chrome, Safari, Opera */
+  display: none; /* Chrome, Safari, Opera */
 }
 </style>

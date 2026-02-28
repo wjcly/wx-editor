@@ -1106,24 +1106,6 @@ onUnmounted(() => {
   }
 }
 
-/* 滚动条样式 */
-.overflow-y-auto::-webkit-scrollbar {
-  width: 6px;
-}
-
-.overflow-y-auto::-webkit-scrollbar-track {
-  background-color: transparent;
-}
-
-.overflow-y-auto::-webkit-scrollbar-thumb {
-  background-color: rgba(144, 146, 152, 0.5);
-  border-radius: 3px;
-}
-
-html.dark .overflow-y-auto::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
 /* 分享模式遮罩 */
 .share-overlay {
   position: absolute;

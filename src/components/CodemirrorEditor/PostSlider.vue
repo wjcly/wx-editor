@@ -563,14 +563,6 @@ nav::-webkit-scrollbar-thumb:hover {
   background-color: rgba(var(--primary), 0.3);
 }
 
-/* 暗色模式滚动条 */
-:global(.dark) nav::-webkit-scrollbar-thumb {
-  background-color: rgba(var(--primary), 0.2);
-}
-
-:global(.dark) nav::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(var(--primary), 0.4);
-}
 
 /* 列表项动画效果 */
 .group {
