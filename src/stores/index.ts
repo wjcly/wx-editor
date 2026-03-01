@@ -9,6 +9,7 @@ import { altKey, codeBlockThemeOptions, colorOptions, fontFamilyOptions, fontSiz
 import type { Post, WechatDraft } from '@/types/post'
 import { PostGroup } from '@/types/post'
 import { addPrefix, css2json, customCssWithTemplate, customizeTheme, downloadMD, exportHTML, formatDoc } from '@/utils'
+import { getProxyUrl, replaceProxyUrlsInHtml } from '@/utils/imageProxy'
 import { initRenderer } from '@/utils/renderer'
 
 export const useStore = defineStore(`store`, () => {
@@ -82,7 +83,9 @@ export const useStore = defineStore(`store`, () => {
     processedContent = processedContent.replace(/ data-w="[^"]*"/g, ``)
     processedContent = processedContent.replace(/ data-ratio="[^"]*"/g, ``)
     // 将图片URL转换为通过wsrv.nl代理的URL
-    processedContent = processedContent.replace(/src="(https?:\/\/mmbiz\.(qpic|qlogo)\.cn\/[^\s"]*)"/g, `src="https://wsrv.nl/?url=$1"`)
+    processedContent = processedContent.replace(/src="(https?:\/\/mmbiz\.(qpic|qlogo)\.cn\/[^\s"]*)"/g, (_, url) => {
+      return `src="${getProxyUrl(url)}"`
+    })
     return processedContent
   }
 
@@ -635,7 +638,7 @@ export const useStore = defineStore(`store`, () => {
     const currentPost = posts.value.find(p => p.id === currentPostId.value)
     if (currentPost && currentPost.group === PostGroup.WECHAT) {
       // 对于微信内容，需要临时处理图片URL（移除代理URL，因为是导出到本地）
-      const htmlContent = output.value.replace(/src="https:\/\/wsrv\.nl\/\?url=/g, `src="`)
+      const htmlContent = replaceProxyUrlsInHtml(output.value)
       const element = document.querySelector(`#output`)!
       const originalContent = element.innerHTML
       element.innerHTML = htmlContent

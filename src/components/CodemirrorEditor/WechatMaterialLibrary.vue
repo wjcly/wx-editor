@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { toast } from '@/composables/useToast'
+import { getProxyUrl } from '@/utils/imageProxy'
 import { WechatPostService } from '@/utils/wechatPostService'
 
 // 素材类型枚举
@@ -232,13 +233,13 @@ function handlePageChange() {
 function getMaterialImageUrl(material: any, type: MaterialType): string {
   if (type === `image`) {
     if (material.url) {
-      return `https://wsrv.nl?url=${encodeURIComponent(material.url)}`
+      return getProxyUrl(material.url)
     }
   }
   else if (type === `video`) {
     // 视频素材：优先使用 cover_url，然后是 thumb_url，最后是其他可能的URL
     if (material.cover_url) {
-      return `https://wsrv.nl?url=${encodeURIComponent(material.cover_url)}`
+      return getProxyUrl(material.cover_url)
     }
     return ``
   }

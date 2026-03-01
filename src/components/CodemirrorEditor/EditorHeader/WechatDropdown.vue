@@ -3,6 +3,7 @@ import { Image, MessageCircle, Settings } from 'lucide-vue-next'
 import { ref } from 'vue'
 import WechatConfigDialog from '@/components/CodemirrorEditor/EditorHeader/WechatConfigDialog.vue'
 import WechatMaterialLibraryDialog from '@/components/CodemirrorEditor/WechatMaterialLibraryDialog.vue'
+import { getProxyUrl } from '@/utils/imageProxy'
 
 const wechatConfigDialogVisible = ref(false)
 const wechatMaterialLibraryDialogVisible = ref(false)
@@ -15,9 +16,9 @@ function handleInsertMaterial(data: { materials: any[] }) {
     const contents = data.materials.map((material) => {
       console.log(material.type)
       if (material.type === `image`) {
-        // 使用 wsrv.nl 代理服务，避免跨域问题
+        // 使用代理服务，避免跨域问题
         const imageUrl = material.url || material.thumb_url
-        const proxyUrl = `https://wsrv.nl?url=${encodeURIComponent(imageUrl)}`
+        const proxyUrl = getProxyUrl(imageUrl)
         return `![${material.name || `微信图片`}](${proxyUrl})`
       }
       // 其他类型的素材暂不处理

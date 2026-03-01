@@ -1,7 +1,7 @@
 import { getApiConfig } from '@/config/apiConfig'
 import fetch, { axiosInstance as service } from '@/utils/fetch'
+import { getProxyUrl, replaceProxyUrlsWithOriginal } from '@/utils/imageProxy'
 import { sanitizeForWechat } from '@/utils/styleSanitize'
-import { replaceProxyUrlsWithOriginal } from '@/utils/urlUtils'
 
 export interface WechatTokenResponse {
   access_token: string
@@ -110,9 +110,9 @@ export class WechatPostService {
     }
 
     let imageUrl = res.url
-    // 只有在使用代理且是网站部署时才使用 wsrv.nl
+    // 只有在使用代理且是网站部署时才使用代理服务
     if (useProxy && window.location.href.startsWith(`http`)) {
-      imageUrl = `https://wsrv.nl?url=${encodeURIComponent(imageUrl)}`
+      imageUrl = getProxyUrl(imageUrl)
     }
 
     return imageUrl
@@ -491,9 +491,9 @@ export class WechatPostService {
     }
 
     let imageUrl = res.url
-    // 只有在使用代理且是网站部署时才使用 wsrv.nl
+    // 只有在使用代理且是网站部署时才使用代理服务
     if (useProxy && window.location.href.startsWith(`http`)) {
-      imageUrl = `https://wsrv.nl?url=${encodeURIComponent(imageUrl)}`
+      imageUrl = getProxyUrl(imageUrl)
     }
 
     return imageUrl
