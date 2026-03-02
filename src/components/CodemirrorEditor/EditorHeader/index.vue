@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Bold, ClipboardPaste, Code, Copy, FilePlus, Italic, Keyboard, Link, Moon, MousePointerClick, PanelLeftClose, PanelLeftOpen, Redo, RotateCcw, Save, Search, Settings, Sparkles, Sun, Underline } from 'lucide-vue-next'
+import { Bold, ClipboardPaste, Code, Copy, FilePlus, Italic, Keyboard, Link, ListTree, Moon, MousePointerClick, PanelLeftClose, PanelLeftOpen, Redo, RotateCcw, Save, Search, Sparkles, Sun, Underline } from 'lucide-vue-next'
 import { ref } from 'vue'
 import AboutDialog from '@/components/CodemirrorEditor/EditorHeader/AboutDialog.vue'
 import AIDropdown from '@/components/CodemirrorEditor/EditorHeader/AIDropdown.vue'
@@ -192,7 +192,7 @@ const showExportImageDialog = ref(false)
       <PostInfo />
 
       <Button variant="outline" @click="store.isOpenRightSlider = !store.isOpenRightSlider">
-        <Settings class="size-4" />
+        <ListTree class="size-4" />
       </Button>
 
       <Toaster rich-colors position="top-center" />
