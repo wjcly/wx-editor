@@ -9,7 +9,7 @@ import { altKey, codeBlockThemeOptions, colorOptions, fontFamilyOptions, fontSiz
 import type { Post, WechatDraft } from '@/types/post'
 import { PostGroup } from '@/types/post'
 import { addPrefix, css2json, customCssWithTemplate, customizeTheme, downloadMD, exportHTML, formatDoc } from '@/utils'
-import { getProxyUrl, replaceProxyUrlsInHtml } from '@/utils/imageProxy'
+import { getProxyUrl, replaceProxyUrlsInHtml } from '@/composables/useImageProxy'
 import { initRenderer } from '@/utils/renderer'
 
 export const useStore = defineStore(`store`, () => {

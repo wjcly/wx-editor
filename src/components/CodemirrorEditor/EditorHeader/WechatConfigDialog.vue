@@ -18,6 +18,7 @@ const form = ref({
   appID: ``,
   appsecret: ``,
   proxyOrigin: ``,
+  imageProxyUrl: ``,
 })
 
 // 加载配置
@@ -30,6 +31,7 @@ onMounted(() => {
       form.value.appID = config.appID || ``
       form.value.appsecret = config.appsecret || ``
       form.value.proxyOrigin = config.proxyOrigin || ``
+      form.value.imageProxyUrl = config.imageProxyUrl || ``
     }
     catch (e) {
       console.error(`解析全局代理配置失败`, e)
@@ -48,6 +50,7 @@ watch(() => props.visible, (newVal) => {
         form.value.appID = config.appID || ``
         form.value.appsecret = config.appsecret || ``
         form.value.proxyOrigin = config.proxyOrigin || ``
+        form.value.imageProxyUrl = config.imageProxyUrl || ``
       }
       catch (e) {
         console.error(`解析全局代理配置失败`, e)
@@ -59,6 +62,7 @@ watch(() => props.visible, (newVal) => {
         appID: ``,
         appsecret: ``,
         proxyOrigin: ``,
+        imageProxyUrl: ``,
       }
     }
   }
@@ -71,10 +75,11 @@ function saveConfig() {
     appID: form.value.appID,
     appsecret: form.value.appsecret,
     proxyOrigin: form.value.proxyOrigin,
+    imageProxyUrl: form.value.imageProxyUrl,
   }
   localStorage.setItem(`wxProxyConfig`, JSON.stringify(wxProxyConfig))
 
-  // 移除旧的mpConfig（如果存在）
+  // 移除旧的 mpConfig（如果存在）
   localStorage.removeItem(`mpConfig`)
 
   toast.success(`配置保存成功`)
@@ -91,6 +96,7 @@ function resetConfig() {
     appID: ``,
     appsecret: ``,
     proxyOrigin: ``,
+    imageProxyUrl: ``,
   }
 
   toast.success(`配置已清空`)
@@ -111,7 +117,7 @@ function resetConfig() {
             <Input
               id="appID"
               v-model="form.appID"
-              placeholder="请输入微信公众号AppID"
+              placeholder="请输入微信公众号 AppID"
             />
             <p class="text-muted-foreground text-sm">
               在微信公众平台后台的"开发"->"基本配置"中获取
@@ -124,7 +130,7 @@ function resetConfig() {
               id="appsecret"
               v-model="form.appsecret"
               type="password"
-              placeholder="请输入微信公众号AppSecret"
+              placeholder="请输入微信公众号 AppSecret"
             />
             <p class="text-muted-foreground text-sm">
               在微信公众平台后台的"开发"->"基本配置"中获取
@@ -138,10 +144,24 @@ function resetConfig() {
             <Input
               id="proxyOrigin"
               v-model="form.proxyOrigin"
-              placeholder="http://proxy.example.com"
+              placeholder="http://xxx.com"
             />
             <p class="text-muted-foreground text-sm">
-              代理域名对应的ip地址应在微信公众平台的ip白名单中
+              代理域名对应的 ip 地址应在微信公众平台的 ip 白名单中
+            </p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <div class="space-y-2">
+            <Label for="imageProxyUrl">图片代理 URL</Label>
+            <Input
+              id="imageProxyUrl"
+              v-model="form.imageProxyUrl"
+              placeholder="https://xxx.com?url={url}"
+            />
+            <p class="text-muted-foreground text-sm">
+              配置后图片将通过该代理 URL 进行加载，使用 {url} 作为原始图片 URL 的占位符。不配置则不使用代理。
             </p>
           </div>
         </div>

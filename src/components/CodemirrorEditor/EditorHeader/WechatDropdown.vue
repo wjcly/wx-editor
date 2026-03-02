@@ -3,7 +3,7 @@ import { Image, MessageCircle, Settings } from 'lucide-vue-next'
 import { ref } from 'vue'
 import WechatConfigDialog from '@/components/CodemirrorEditor/EditorHeader/WechatConfigDialog.vue'
 import WechatMaterialLibraryDialog from '@/components/CodemirrorEditor/WechatMaterialLibraryDialog.vue'
-import { getProxyUrl } from '@/utils/imageProxy'
+import { getProxyUrl } from '@/composables/useImageProxy'
 
 const wechatConfigDialogVisible = ref(false)
 const wechatMaterialLibraryDialogVisible = ref(false)

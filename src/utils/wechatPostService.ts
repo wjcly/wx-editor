@@ -1,6 +1,6 @@
 import { getApiConfig } from '@/config/apiConfig'
 import fetch, { axiosInstance as service } from '@/utils/fetch'
-import { getProxyUrl, replaceProxyUrlsWithOriginal } from '@/utils/imageProxy'
+import { getProxyUrl, replaceProxyUrlsWithOriginal } from '@/composables/useImageProxy'
 import { sanitizeForWechat } from '@/utils/styleSanitize'
 
 export interface WechatTokenResponse {

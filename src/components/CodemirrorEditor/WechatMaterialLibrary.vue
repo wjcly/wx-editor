@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { toast } from '@/composables/useToast'
-import { getProxyUrl } from '@/utils/imageProxy'
+import { getProxyUrl } from '@/composables/useImageProxy'
 import { WechatPostService } from '@/utils/wechatPostService'
 
 // 素材类型枚举
@@ -1645,7 +1645,7 @@ html.dark .bar {
   animation-duration: 1.3s;
 }
 
-/* Default (light mode) keyframes */
+/* Keyframes for visualizer animation */
 @keyframes visualizer {
   0%,
   100% {
@@ -1654,48 +1654,6 @@ html.dark .bar {
   50% {
     height: 30px;
   }
-}
-
-html:not(.dark) @keyframes visualizer {
-  0%,
-  100% {
-    height: 10px;
-    background: rgba(107, 114, 128, 0.6);
-  }
-  50% {
-    height: 30px;
-    background: rgba(75, 85, 99, 1);
-  }
-}
-
-html.dark @keyframes visualizer {
-  0%,
-  100% {
-    height: 10px;
-    background: rgba(156, 163, 175, 0.5);
-  }
-  50% {
-    height: 30px;
-    background: rgba(209, 213, 219, 0.9);
-  }
-}
-
-/* Dark mode keyframes */
-html.dark @keyframes visualizer {
-  0%,
-  100% {
-    height: 10px;
-    background: rgba(255, 255, 255, 0.5);
-  }
-  50% {
-    height: 30px;
-    background: rgba(255, 255, 255, 0.9);
-  }
-}
-
-.bar {
-  animation: visualizer 1.2s ease-in-out infinite;
-  animation-play-state: running;
 }
 
 /* 隐藏原生音频元素 */
