@@ -401,6 +401,7 @@ async function loadFullPreview(template: Template) {
               {{ filteredTemplates[activeTab]?.title || '模板列表' }}
             </h3>
             <div
+              :key="activeTab"
               v-bind="containerProps"
               class="custom-scrollbar space-y-1 md:space-y-1.5 overflow-y-auto pr-1 md:h-[40vh]"
             >

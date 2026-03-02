@@ -33,10 +33,6 @@ export const advancedTemplates = [
     content: `这是一个带有脚注的文本\n\n这又是一个脚注\n\n: 这是第一个脚注的详细内容\n: 这是第二个脚注的详细内容，可以包含多行\n    缩进后可以包含更多内容`,
   },
   {
-    name: `目录生成`,
-    content: `[TOC]\n\n# 第一章\n## 1.1 节\n### 1.1.1 小节\n## 1.2 节\n\n# 第二章\n## 2.1 节\n## 2.2 节\n\n# 第三章`,
-  },
-  {
     name: `高级链接`,
     content: `[相对路径](./assets/images/example.png)\n[邮件链接](mailto:example@example.com)\n[电话链接](tel:+1234567890)\n\n<!-- 链接到文档内的标题 -->\n[跳转到简介](#简介)\n\n<!-- 链接到其他文档 -->\n[其他文档](document.md#章节)`,
   },
