@@ -72,7 +72,6 @@
 - **图表**: Chart.js + Mermaid
 - **数学公式**: MathJax
 - **代码高亮**: Highlight.js
-- **移动端**: Capacitor 7
 - **本地存储**: localStorage + IndexedDB
 
 ## 🚀 快速开始
