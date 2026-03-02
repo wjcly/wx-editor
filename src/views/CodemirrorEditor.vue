@@ -828,6 +828,24 @@ function mdLocalToRemote() {
   dom.ondragover = evt => evt.preventDefault()
   dom.ondrop = async (evt: any) => {
     evt.preventDefault()
+
+    // 支持拖拽图片文件上传
+    const files = evt.dataTransfer.files
+    if (files && files.length > 0) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        // 只处理图片文件
+        if (file.type.startsWith('image/')) {
+          const isValid = beforeUpload(file)
+          if (isValid) {
+            uploadImage(file)
+          }
+        }
+      }
+      return
+    }
+
+    // 原有的文件系统句柄处理逻辑
     for (const item of evt.dataTransfer.items) {
       item.getAsFileSystemHandle().then(async (handle: { kind: string, getFile: () => any }) => {
         if (handle.kind === `directory`) {
@@ -1264,58 +1282,31 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div
-    ref="container"
-    class="container flex flex-col"
-  >
-    <EditorHeader
-      @add-format="addFormat"
-      @format-content="formatContent"
-      @start-copy="startCopy"
-      @end-copy="endCopy"
-      @add-post="handleAddPost"
-      @save="handleSave"
-      @select-all="handleSelectAll"
-      @undo="handleUndo"
-      @redo="handleRedo"
-      @find="handleFind"
-    />
+  <div ref="container" class="container flex flex-col">
+    <EditorHeader @add-format="addFormat" @format-content="formatContent" @start-copy="startCopy" @end-copy="endCopy"
+      @add-post="handleAddPost" @save="handleSave" @select-all="handleSelectAll" @undo="handleUndo" @redo="handleRedo"
+      @find="handleFind" />
 
     <main class="container-main flex flex-1 flex-col">
       <div class="container-main-section border-radius-10 relative flex flex-1 overflow-hidden border-1">
         <PostSlider />
         <div class="editor-preview-container flex flex-1 flex-col overflow-hidden">
           <div class="search-panel-wrapper relative">
-            <SearchPanel
-              v-model="showSearchPanel"
-              :editor="editor"
-              @close="showSearchPanel = false"
-            />
+            <SearchPanel v-model="showSearchPanel" :editor="editor" @close="showSearchPanel = false" />
           </div>
           <div class="editor-preview-content flex flex-1 overflow-hidden">
-            <div
-              ref="codeMirrorWrapper"
-              class="codeMirror-wrapper relative"
-              :class="{
-                'order-1': !store.isEditOnLeft,
-                'border-r': store.isEditOnLeft,
-                'border-l': !store.isEditOnLeft,
-                'is-transitioning': isTransitioning,
-              }"
-            >
+            <div ref="codeMirrorWrapper" class="codeMirror-wrapper relative" :class="{
+      'order-1': !store.isEditOnLeft,
+      'border-r': store.isEditOnLeft,
+      'border-l': !store.isEditOnLeft,
+      'is-transitioning': isTransitioning,
+    }">
               <ContextMenu modal>
                 <ContextMenuTrigger>
-                  <textarea
-                    id="editor"
-                    type="textarea"
-                    placeholder="Your markdown text here."
-                    @focus="isEditorFocused = true"
-                    @blur="isEditorFocused = false"
-                  />
+                  <textarea id="editor" type="textarea" placeholder="Your markdown text here."
+                    @focus="isEditorFocused = true" @blur="isEditorFocused = false" />
                 </ContextMenuTrigger>
-                <ContextMenuContent
-                  class="context-menu-content"
-                >
+                <ContextMenuContent class="context-menu-content">
                   <ContextMenuItem @click="checkAIConfigurationAndOpenAssistant()">
                     <Bot class="mr-2 h-4 w-4" />
                     AI助手
@@ -1358,22 +1349,12 @@ onUnmounted(() => {
               </ContextMenu>
             </div>
 
-            <div
-              id="preview"
-              ref="preview"
-              class="preview-wrapper flex-1 p-5"
-              :class="{
-                'is-transitioning': isTransitioning,
-              }"
-            >
+            <div id="preview" ref="preview" class="preview-wrapper flex-1 p-5" :class="{
+      'is-transitioning': isTransitioning,
+    }">
               <div id="output-wrapper" :class="{ output_night: !backLight }">
                 <div class="preview border-x-1 shadow-xl">
-                  <section
-                    id="output"
-                    :key="output"
-                    class="markdown-preview"
-                    v-html="output"
-                  />
+                  <section id="output" :key="output" class="markdown-preview" v-html="output" />
                   <div v-if="isCoping" class="loading-mask">
                     <div class="loading-mask-box">
                       <div class="loading__img" />
@@ -1388,10 +1369,8 @@ onUnmounted(() => {
         <CssEditor class="order-2 flex-1" />
         <RightSlider class="order-2" />
       </div>
-      <footer
-        class="text-muted-foreground h-[30px] flex select-none items-center justify-end text-[12px]"
-        :class="{ hidden: displayStore.isShowInsertFormDialog || displayStore.isShowCssEditor || showTemplateDialog || showRewriteDialog || showUploadImgDialog || isShowClearConfirmDialog || aiStore.settingsDialogVisible }"
-      >
+      <footer class="text-muted-foreground h-[30px] flex select-none items-center justify-end text-[12px]"
+        :class="{ hidden: displayStore.isShowInsertFormDialog || displayStore.isShowCssEditor || showTemplateDialog || showRewriteDialog || showUploadImgDialog || isShowClearConfirmDialog || aiStore.settingsDialogVisible }">
         字数 {{ readingTime?.words }}， 阅读大约需 {{ Math.ceil(readingTime?.minutes ?? 0) }} 分钟
       </footer>
 
@@ -1418,19 +1397,11 @@ onUnmounted(() => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <RewriteDialog
-        v-model:open="showRewriteDialog"
-        @confirm="handleRewriteConfirm"
-      />
+      <RewriteDialog v-model:open="showRewriteDialog" @confirm="handleRewriteConfirm" />
 
-      <AIAssistant
-        ref="aiAssistantRef"
-        :editor="editor"
-      />
+      <AIAssistant ref="aiAssistantRef" :editor="editor" />
 
-      <MarkdownTemplateDialog
-        v-model:show="showTemplateDialog"
-      />
+      <MarkdownTemplateDialog v-model:show="showTemplateDialog" />
 
       <AlertDialog v-model:open="isShowClearConfirmDialog">
         <AlertDialogContent>
@@ -1488,25 +1459,30 @@ onUnmounted(() => {
 .preview-wrapper {
   height: 100%;
   will-change: transform, opacity;
-  flex: 1; /* 确保编辑器和预览区域各占一半 */
+  flex: 1;
+  /* 确保编辑器和预览区域各占一半 */
 }
 
 .container-main-section {
   display: flex;
   flex-direction: row;
-  height: calc(100vh - 150px); /* 调整高度以适应头部和边距 */
+  height: calc(100vh - 150px);
+  /* 调整高度以适应头部和边距 */
 }
 
 .editor-preview-container {
   display: flex;
   flex-direction: column;
-  flex: 1; /* 占据剩余空间 */
+  flex: 1;
+  /* 占据剩余空间 */
 }
 
 .editor-preview-content {
   display: flex;
-  flex-direction: row; /* 水平排列编辑器和预览 */
-  flex: 1; /* 占据容器剩余空间 */
+  flex-direction: row;
+  /* 水平排列编辑器和预览 */
+  flex: 1;
+  /* 占据容器剩余空间 */
 }
 
 .codeMirror-wrapper {
