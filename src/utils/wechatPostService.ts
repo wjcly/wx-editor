@@ -460,17 +460,16 @@ export class WechatPostService {
     proxyOrigin?: string,
   ): Promise<string> {
     // 验证文件格式
-    const allowedTypes = [`image/jpeg`, `image/png`, `image/jpg`]
+    const allowedTypes = [`image/bmp`, `image/png`, `image/jpeg`, `image/jpg`, `image/gif`]
     if (!allowedTypes.includes(file.type)) {
-      throw new Error(`仅支持 JPG/PNG 格式图片`)
+      throw new Error(`仅支持 .bmp,.png,.jpeg,.jpg,.gif 格式图片`)
     }
 
     // 验证文件大小（必须在1MB以下）
-    const maxSize = 1024 * 1024 // 1MB
+    const maxSize = 5 * 1024 * 1024 // 5MB
     if (file.size > maxSize) {
-      throw new Error(`图片大小必须在1MB以下，当前文件大小: ${(file.size / 1024 / 1024).toFixed(2)}MB`)
+      throw new Error(`图片大小必须在5MB以下，当前文件大小: ${(file.size / 1024 / 1024).toFixed(2)}MB`)
     }
-
     const formdata = new FormData()
     formdata.append(`media`, file, file.name)
 
