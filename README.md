@@ -57,7 +57,6 @@
 
 - **Markdown** - 导出源文件
 - **HTML** - 导出格式化后的 HTML
-- **Word (.docx)** - 导出为 Word 文档
 - **长图** - 导出文章/AI对话为 PNG 长图
 
 

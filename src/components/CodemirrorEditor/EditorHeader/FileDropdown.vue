@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ArrowUpDown, Download, File, FileCode, FileText, FileType, Image, Moon, Newspaper, PanelLeft, Plus, Upload } from 'lucide-vue-next'
+import { ArrowUpDown, Download, File, FileCode, FileType, Image, Moon, Newspaper, PanelLeft, Plus, Upload } from 'lucide-vue-next'
 import { ref } from 'vue'
 import ExportImageDialog from '@/components/CodemirrorEditor/EditorHeader/ExportImageDialog.vue'
 import ImportWechatDialog from '@/components/CodemirrorEditor/EditorHeader/ImportWechatDialog.vue'
 import MarkdownTemplateDialog from '@/components/CodemirrorEditor/EditorHeader/MarkdownTemplateDialog.vue'
 import { toast } from '@/composables/useToast'
-import { exportToWord } from '@/services/export'
 import { useStore } from '@/stores'
 
 const store = useStore()
@@ -37,30 +36,8 @@ function handleExportImage() {
 // 添加新文章
 function addPost() {
   store.addPost(`新文章`)
-  // 切换到新创建的文章（addPost已经设置currentPostId为新文章的ID）
+  // 切换到新创建的文章（addPost 已经设置 currentPostId 为新文章的 ID）
   toast.success(`文章新增成功`)
-}
-
-async function exportWord() {
-  try {
-    if (store._currentPost) {
-      const content = store._currentPost.content
-      const title = store._currentPost.title || `Markdown Export`
-      await exportToWord(content, {
-        title,
-        author: `MD Editor`,
-        subject: `从 Markdown 导出的文档`,
-      })
-      toast.success(`Word文档导出成功`)
-    }
-    else {
-      throw new Error(`当前文章不存在`)
-    }
-  }
-  catch (error) {
-    console.error(`导出Word文档失败:`, error)
-    toast.error(`导出失败：${error instanceof Error ? error.message : `未知错误`}`)
-  }
 }
 </script>
 
@@ -96,10 +73,6 @@ async function exportWord() {
       <MenubarItem @click="exportEditorContent2HTML()">
         <FileCode class="mr-2 size-4" />
         导出 .html
-      </MenubarItem>
-      <MenubarItem @click="exportWord">
-        <FileText class="mr-2 size-4" />
-        导出 .docx
       </MenubarItem>
       <MenubarItem @click="handleExportImage">
         <Image class="mr-2 size-4" />
