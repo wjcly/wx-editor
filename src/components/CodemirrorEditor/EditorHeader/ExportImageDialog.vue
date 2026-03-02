@@ -12,8 +12,8 @@ defineProps<{
 
 const emit = defineEmits([`update:show`, `export`])
 
-const imageQuality = ref<`1` | `2` | `3`>(`2`) // 1-普通, 2-高清, 3-超清
-const imageFormat = ref<`png` | `jpeg`>(`png`)
+const imageQuality = ref<`1` | `2` | `3`>(`2`) // 1-普通，2-高清，3-超清
+const imageFormat = ref<`png` | `jpeg` | `jpg`>(`png`)
 const exportProgress = ref<number>(0)
 const isExporting = ref(false)
 
@@ -22,188 +22,63 @@ async function handleExport() {
   exportProgress.value = 0
 
   try {
-    // 获取预览区域元素
-    const previewElement = document.querySelector(`#output`) as HTMLElement
-    if (!previewElement) {
+    // 获取整个预览 wrapper（包含背景色）
+    const previewWrapper = document.querySelector(`.preview-wrapper`) as HTMLElement
+    if (!previewWrapper) {
       throw new Error(`预览区域不存在`)
     }
 
     // 设置进度
     exportProgress.value = 30
 
-    // 保存原始滚动位置和样式
-    const originalScrollTop = previewElement.scrollTop
-    const originalStyle = previewElement.style.cssText
-    const originalHtml = previewElement.innerHTML
+    // 保存原始样式和状态
+    const originalStyle = previewWrapper.style.cssText
+    // 检查当前是否是 dark 模式
+    const isDark = document.body.classList.contains(`dark`)
 
     try {
+      // 获取预览区域的实际宽度
+      const previewWidth = previewWrapper.offsetWidth
+
       // 临时修改样式以捕获完整内容
-      previewElement.style.height = `auto`
-      previewElement.style.overflow = `visible`
+      previewWrapper.style.height = `auto`
+      previewWrapper.style.overflow = `visible`
 
-      // 处理表格样式
-      const tables = previewElement.querySelectorAll(`table`)
-      tables.forEach((table) => {
-        const tableEl = table as HTMLElement
-        tableEl.style.cssText = `
-          width: 100% !important;
-          table-layout: fixed !important;
-          border-collapse: collapse !important;
-          margin: 16px 0 !important;
-        `
-
-        // 处理表格单元格
-        const cells = tableEl.querySelectorAll(`th, td`)
-        cells.forEach((cell) => {
-          const cellEl = cell as HTMLElement
-          cellEl.style.cssText = `
-            padding: 8px !important;
-            border: 1px solid #dfdfdf !important;
-            word-break: break-all !important;
-            white-space: normal !important;
-            text-align: left !important;
-          `
-        })
-      })
-
-      // 临时修改标题样式
-      const titles = previewElement.querySelectorAll(`h1, h2`)
-      titles.forEach((title) => {
-        const titleEl = title as HTMLElement
-        const computedStyle = window.getComputedStyle(titleEl)
-        const backgroundColor = computedStyle.getPropertyValue(`background-color`)
-        const isH1 = titleEl.tagName.toLowerCase() === `h1`
-
-        titleEl.style.cssText = isH1
-          ? `
-            display: block !important;
-            padding: 0.5em 1em !important;
-            margin: 0 !important;
-            color: hsl(var(--foreground)) !important;
-            font-size: 1.2em !important;
-            font-weight: bold !important;
-            text-align: center !important;
-            border-bottom: 2px solid var(--md-primary-color) !important;
-          `
-          : `
-            display: block !important;
-            padding: 0.5em 1em !important;
-            margin: 2em auto !important;
-            color: #fff !important;
-            background: ${backgroundColor} !important;
-            font-size: 1.2em !important;
-            font-weight: bold !important;
-            text-align: center !important;
-            line-height: 1.5 !important;
-            border-radius: 4px !important;
-          `
-      })
-
-      // 配置html2canvas选项
+      // 配置 html2canvas 选项
       const scale = imageQuality.value === `1` ? 1 : imageQuality.value === `2` ? 2 : 3
 
-      // 等待所有图片加载完成
-      await Promise.all(Array.from(previewElement.getElementsByTagName(`img`)).map((img) => {
-        return new Promise((resolve) => {
-          const handleImage = () => {
-            // 创建一个新的图片元素
-            const newImg = new Image()
-            newImg.crossOrigin = `anonymous`
-
-            // 使用代理服务器URL
-            const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(img.src)}`
-
-            newImg.onload = () => {
-              // 创建canvas来处理图片
-              const canvas = document.createElement(`canvas`)
-              canvas.width = newImg.width
-              canvas.height = newImg.height
-              const ctx = canvas.getContext(`2d`)
-              ctx?.drawImage(newImg, 0, 0)
-
-              // 将原图替换为base64格式
-              try {
-                img.src = canvas.toDataURL(`image/png`)
-                resolve(null)
-              }
-              catch (e) {
-                console.warn(`图片转换失败:`, e)
-                // 如果转换失败，直接使用代理URL
-                img.src = proxyUrl
-                resolve(null)
-              }
-            }
-
-            newImg.onerror = () => {
-              console.warn(`图片加载失败，尝试使用代理: ${img.src}`)
-              // 直接使用代理URL
-              img.src = proxyUrl
-              resolve(null)
-            }
-
-            // 尝试加载图片
-            newImg.src = proxyUrl
-          }
-
-          if (img.complete) {
-            handleImage()
-          }
-          else {
-            img.onload = handleImage
-            img.onerror = () => {
-              console.warn(`图片加载失败: ${img.src}`)
-              // 使用占位图作为最后的备选方案
-              img.src = `data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"%3E%3Cpath fill="%23ccc" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/%3E%3C/svg%3E`
-              resolve(null)
-            }
-          }
-        })
-      }))
-
-      const canvas = await html2canvas(previewElement, {
+      const canvas = await html2canvas(previewWrapper, {
         scale,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: document.body.classList.contains(`dark`) ? `#1a1a1a` : `#ffffff`,
+        backgroundColor: isDark ? `#1a1a1a` : `#ffffff`,
         logging: false,
-        scrollY: -window.scrollY,
-        windowWidth: previewElement.scrollWidth * scale,
-        windowHeight: previewElement.scrollHeight * scale,
-        imageTimeout: 30000, // 增加图片加载超时时间
-        proxy: `https://images.weserv.nl/?url=`, // 设置全局代理
+        // 使用预览区域的实际宽度
+        width: previewWidth,
+        windowHeight: previewWrapper.scrollHeight,
+        // 在克隆的文档中应用 dark 类和样式
         onclone: (clonedDoc) => {
-          // 确保克隆的元素也应用了相同的样式
-          const clonedTitles = clonedDoc.querySelectorAll(`h1, h2`)
-          clonedTitles.forEach((title) => {
-            const titleEl = title as HTMLElement
-            const computedStyle = window.getComputedStyle(titleEl)
-            const backgroundColor = computedStyle.getPropertyValue(`background-color`)
-            const isH1 = titleEl.tagName.toLowerCase() === `h1`
-
-            titleEl.style.cssText = isH1
-              ? `
-                display: block !important;
-                padding: 0.5em 1em !important;
-                margin: 0 !important;
-                color: hsl(var(--foreground)) !important;
-                font-size: 1.2em !important;
-                font-weight: bold !important;
-                text-align: center !important;
-                border-bottom: 2px solid var(--md-primary-color) !important;
-              `
-              : `
-                display: block !important;
-                padding: 0.5em 1em !important;
-                margin: 2em auto !important;
-                color: #fff !important;
-                background: ${backgroundColor} !important;
-                font-size: 1.2em !important;
-                font-weight: bold !important;
-                text-align: center !important;
-                line-height: 1.5 !important;
-                border-radius: 4px !important;
-              `
+          // 复制原页面的所有 style 标签
+          const styles = document.querySelectorAll(`style`)
+          styles.forEach((style) => {
+            const clonedStyle = clonedDoc.createElement(`style`)
+            clonedStyle.textContent = style.textContent
+            clonedDoc.head.appendChild(clonedStyle)
           })
+
+          // 复制原页面的所有 link 标签（CSS 文件）
+          const links = document.querySelectorAll(`link[rel="stylesheet"]`)
+          links.forEach((link) => {
+            const clonedLink = clonedDoc.createElement(`link`)
+            clonedLink.rel = `stylesheet`
+            clonedLink.href = (link as HTMLLinkElement).href
+            clonedDoc.head.appendChild(clonedLink)
+          })
+
+          // 添加 dark 类到克隆的 body
+          if (isDark) {
+            clonedDoc.body.classList.add(`dark`)
+          }
         },
       })
 
@@ -227,9 +102,7 @@ async function handleExport() {
     }
     finally {
       // 恢复原始状态
-      previewElement.innerHTML = originalHtml
-      previewElement.style.cssText = originalStyle
-      previewElement.scrollTop = originalScrollTop
+      previewWrapper.style.cssText = originalStyle
     }
   }
   catch (error) {
@@ -281,6 +154,9 @@ async function handleExport() {
               </SelectItem>
               <SelectItem value="jpeg">
                 JPEG
+              </SelectItem>
+              <SelectItem value="jpg">
+                JPG
               </SelectItem>
             </SelectContent>
           </Select>
