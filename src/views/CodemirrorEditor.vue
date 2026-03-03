@@ -1,16 +1,16 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import type { MarkedOptions } from 'marked'
 import type { ComponentPublicInstance } from 'vue'
 import { useThrottleFn } from '@vueuse/core'
 import CodeMirror from 'codemirror'
-import { Bot, Download, Image, LayoutTemplate, Table, Upload } from 'lucide-vue-next'
+import { Bot, Download, FileCode, FileType, Image, Table, Upload } from 'lucide-vue-next'
 import { marked } from 'marked'
-import { computed, provide, unref } from 'vue'
+import { computed, unref } from 'vue'
 import AIAssistant from '@/components/CodemirrorEditor/AIAssistant.vue'
+import ExportImageDialog from '@/components/CodemirrorEditor/EditorHeader/ExportImageDialog.vue'
 import MarkdownTemplateDialog from '@/components/CodemirrorEditor/EditorHeader/MarkdownTemplateDialog.vue'
 import RewriteDialog from '@/components/CodemirrorEditor/RewriteDialog.vue'
 import SearchPanel from '@/components/CodemirrorEditor/SearchPanel.vue'
-import UploadImgDialog from '@/components/CodemirrorEditor/UploadImgDialog.vue'
 import { toast } from '@/composables/useToast'
 import { altKey, ctrlKey, shiftKey } from '@/config'
 import { type AIStreamOptions, streamAIContent } from '@/services/ai'
@@ -44,10 +44,10 @@ const {
 // 添加状态
 const showRewriteDialog = ref(false)
 const showTemplateDialog = ref(false)
-const showUploadImgDialog = ref(false)
 const showControls = ref(true)
 const isShowClearConfirmDialog = ref(false)
 const showSearchPanel = ref(false) // 添加搜索面板状态
+const showExportImageDialog = ref(false) // 导出长图对话框
 
 const isTransitioning = ref(false)
 const isEditorFocused = ref(false)
@@ -58,19 +58,6 @@ const tempContent = ref(``) // 添加临时存储变量
 const aiAssistantRef = ref<InstanceType<typeof AIAssistant> | null>(null)
 
 // 用于存储AI助手的引用，以便其他组件可以访问
-provide('aiAssistantRef', aiAssistantRef)
-
-// 插入图片URL到编辑器
-function insertImageUrl(url: string) {
-  if (!store.editor)
-    return
-
-  const imageUrl = `![](${url})`
-
-  // 将 Markdown 形式的 URL 插入编辑框光标所在位置
-  store.editor.replaceSelection(`\n${imageUrl}\n`, 'end')
-}
-
 // 防止重复显示通知的状态
 const aiConfigNotificationTimeout = ref<number | null>(null)
 
@@ -191,10 +178,10 @@ const combinedDialogState = computed(() => {
     || displayStore.isShowCssEditor
     || showTemplateDialog.value
     || showRewriteDialog.value
-    || showUploadImgDialog.value
     || aiDialogState.value
     || isShowClearConfirmDialog.value
     || aiStore.settingsDialogVisible
+    || showExportImageDialog.value
 })
 
 watch(combinedDialogState, (isDialogOpen) => {
@@ -1316,12 +1303,8 @@ onUnmounted(() => {
                   </ContextMenuItem>
                   <ContextMenuSeparator />
                   <ContextMenuItem @click="showTemplateDialog = true">
-                    <LayoutTemplate class="mr-2 h-4 w-4" />
+                    <FileType class="mr-2 h-4 w-4" />
                     插入模板
-                  </ContextMenuItem>
-                  <ContextMenuItem @click="showUploadImgDialog = true">
-                    <Image class="mr-2 h-4 w-4" />
-                    上传图片
                   </ContextMenuItem>
                   <ContextMenuItem @click="toggleShowInsertFormDialog()">
                     <Table class="mr-2 h-4 w-4" />
@@ -1329,16 +1312,20 @@ onUnmounted(() => {
                   </ContextMenuItem>
                   <ContextMenuSeparator />
                   <ContextMenuItem @click="importMarkdownContent()">
-                    <Download class="mr-2 h-4 w-4" />
+                    <Upload class="mr-2 h-4 w-4" />
                     导入 .md 文档
                   </ContextMenuItem>
                   <ContextMenuItem @click="exportEditorContent2MD()">
-                    <Upload class="mr-2 h-4 w-4" />
+                    <Download class="mr-2 h-4 w-4" />
                     导出 .md 文档
                   </ContextMenuItem>
                   <ContextMenuItem @click="exportEditorContent2HTML()">
-                    <Upload class="mr-2 h-4 w-4" />
+                    <FileCode class="mr-2 h-4 w-4" />
                     导出 .html
+                  </ContextMenuItem>
+                  <ContextMenuItem @click="showExportImageDialog = true">
+                    <Image class="mr-2 h-4 w-4" />
+                    导出长图
                   </ContextMenuItem>
                 </ContextMenuContent>
               </ContextMenu>
@@ -1365,11 +1352,11 @@ onUnmounted(() => {
         <RightSlider class="order-2" />
       </div>
       <footer class="text-muted-foreground h-[30px] flex select-none items-center justify-end text-[12px]"
-        :class="{ hidden: displayStore.isShowInsertFormDialog || displayStore.isShowCssEditor || showTemplateDialog || showRewriteDialog || showUploadImgDialog || isShowClearConfirmDialog || aiStore.settingsDialogVisible }">
+        :class="{ hidden: displayStore.isShowInsertFormDialog || displayStore.isShowCssEditor || showTemplateDialog || showRewriteDialog || isShowClearConfirmDialog || aiStore.settingsDialogVisible || showExportImageDialog }">
         字数 {{ readingTime?.words }}， 阅读大约需 {{ Math.ceil(readingTime?.minutes ?? 0) }} 分钟
       </footer>
 
-      <UploadImgDialog v-model="showUploadImgDialog" @upload-image="insertImageUrl" />
+      <ExportImageDialog v-model:show="showExportImageDialog" />
 
       <InsertFormDialog />
 

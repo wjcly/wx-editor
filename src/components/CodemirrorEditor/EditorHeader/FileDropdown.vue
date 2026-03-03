@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { ArrowUpDown, Download, File, FileCode, FileType, Image, Moon, Newspaper, PanelLeft, Plus, Upload } from 'lucide-vue-next'
+import { ArrowUpDown, Download, File, FileCode, FileType, Image, Moon, Newspaper, PanelLeft, Plus, Table, Upload } from 'lucide-vue-next'
 import { ref } from 'vue'
 import ExportImageDialog from '@/components/CodemirrorEditor/EditorHeader/ExportImageDialog.vue'
 import ImportWechatDialog from '@/components/CodemirrorEditor/EditorHeader/ImportWechatDialog.vue'
 import MarkdownTemplateDialog from '@/components/CodemirrorEditor/EditorHeader/MarkdownTemplateDialog.vue'
 import { toast } from '@/composables/useToast'
-import { useStore } from '@/stores'
+import { useDisplayStore, useStore } from '@/stores'
 
 const store = useStore()
+const displayStore = useDisplayStore()
 
 const {
   isDark,
@@ -20,6 +21,10 @@ const {
   exportEditorContent2MD,
   importMarkdownContent,
 } = store
+
+const {
+  toggleShowInsertFormDialog,
+} = displayStore
 
 const showImportDialog = ref(false)
 const showExportDialog = ref(false)
@@ -64,6 +69,10 @@ function addPost() {
       <MenubarItem @click="showTemplateDialog = true">
         <FileType class="mr-2 size-4" />
         插入模板
+      </MenubarItem>
+      <MenubarItem @click="toggleShowInsertFormDialog()">
+        <Table class="mr-2 size-4" />
+        插入表格
       </MenubarItem>
       <MenubarSeparator />
       <MenubarItem @click="exportEditorContent2MD()">
