@@ -3,7 +3,7 @@ import type { MarkedOptions } from 'marked'
 import type { ComponentPublicInstance } from 'vue'
 import { useThrottleFn } from '@vueuse/core'
 import CodeMirror from 'codemirror'
-import { Bot, Download, Image, LayoutTemplate, RotateCcw, Table, Upload } from 'lucide-vue-next'
+import { Bot, Download, Image, LayoutTemplate, Table, Upload } from 'lucide-vue-next'
 import { marked } from 'marked'
 import { computed, provide, unref } from 'vue'
 import AIAssistant from '@/components/CodemirrorEditor/AIAssistant.vue'
@@ -34,7 +34,6 @@ const {
   exportEditorContent2MD,
   formatContent,
   importMarkdownContent,
-  resetStyleConfirm,
 } = store
 
 const {
@@ -1328,10 +1327,6 @@ onUnmounted(() => {
                     <Table class="mr-2 h-4 w-4" />
                     插入表格
                   </ContextMenuItem>
-                  <ContextMenuItem @click="resetStyleConfirm()">
-                    <RotateCcw class="mr-2 h-4 w-4" />
-                    恢复默认样式
-                  </ContextMenuItem>
                   <ContextMenuSeparator />
                   <ContextMenuItem @click="importMarkdownContent()">
                     <Download class="mr-2 h-4 w-4" />
@@ -1379,23 +1374,6 @@ onUnmounted(() => {
       <InsertFormDialog />
 
       <RunLoading />
-
-      <AlertDialog v-model:open="store.isOpenConfirmDialog">
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>提示</AlertDialogTitle>
-            <AlertDialogDescription>
-              此操作将丢失本地自定义样式，是否继续？
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction @click="store.resetStyle()">
-              确认
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <RewriteDialog v-model:open="showRewriteDialog" @confirm="handleRewriteConfirm" />
 

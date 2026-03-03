@@ -29,7 +29,6 @@ const {
 } = storeToRefs(store)
 
 const {
-  resetStyleConfirm,
   themeChanged,
   fontChanged,
   sizeChanged,
@@ -155,11 +154,6 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
         <Indent class="mr-2 h-4 w-4" />
         段落首行缩进
       </MenubarCheckboxItem>
-      <MenubarSeparator />
-      <MenubarItem divided @click="resetStyleConfirm">
-        <RotateCcw class="mr-2 h-4 w-4" />
-        重置
-      </MenubarItem>
     </MenubarContent>
   </MenubarMenu>
 </template>

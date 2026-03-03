@@ -418,40 +418,6 @@ export const useStore = defineStore(`store`, () => {
     toRaw(cssEditor.value)?.setOption?.(`theme`, theme)
   })
 
-  // 重置样式
-  const resetStyle = () => {
-    isCiteStatus.value = false
-    isMacCodeBlock.value = true
-    isCountStatus.value = false
-
-    theme.value = themeOptions[0].value
-    fontFamily.value = fontFamilyOptions[0].value
-    fontFamily.value = fontFamilyOptions[0].value
-    fontSize.value = fontSizeOptions[2].value
-    primaryColor.value = colorOptions[0].value
-    codeBlockTheme.value = codeBlockThemeOptions[23].value
-    legend.value = legendOptions[3].value
-
-    cssContentConfig.value = {
-      active: `方案 1`,
-      tabs: [
-        {
-          title: `方案 1`,
-          name: `方案 1`,
-          // 兼容之前的方案
-          content: cssContent.value || DEFAULT_CSS_CONTENT,
-        },
-      ],
-    }
-
-    cssEditor.value!.setValue(DEFAULT_CSS_CONTENT)
-
-    updateCss()
-    editorRefresh()
-
-    toast.success(`样式重置成功~`)
-  }
-
   // 为函数添加刷新编辑器的功能
   const withAfterRefresh = (fn: (...rest: any[]) => void) => (...rest: any[]) => {
     fn(...rest)
@@ -684,13 +650,6 @@ export const useStore = defineStore(`store`, () => {
     body.removeChild(input)
   }
 
-  const isOpenConfirmDialog = ref(false)
-
-  // 重置样式
-  const resetStyleConfirm = () => {
-    isOpenConfirmDialog.value = true
-  }
-
   // 导入内容
   const importContent = async (content: string) => {
     if (!editor.value)
@@ -784,10 +743,6 @@ export const useStore = defineStore(`store`, () => {
     exportEditorContent2MD,
 
     importMarkdownContent,
-
-    isOpenConfirmDialog,
-    resetStyleConfirm,
-    resetStyle,
 
     cssContentConfig,
     addCssContentTab,
