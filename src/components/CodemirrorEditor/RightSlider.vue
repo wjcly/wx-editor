@@ -7,7 +7,7 @@ const store = useStore()
 
 // 目录相关状态
 const tocItems = ref<TocItem[]>([]) // 目录项列表
-const expandedLevels = ref<Set<number>>(new Set([1, 2, 3])) // 默认展开所有层级
+const expandedMap = ref<Map<string, boolean>>(new Map()) // 默认展开所有层级（undefined 表示未设置，默认为展开）
 
 // 目录项接口
 interface TocItem {
@@ -55,51 +55,92 @@ function parseTocFromMarkdown(markdown: string): TocItem[] {
 function updateToc() {
   const content = getCurrentContent()
   tocItems.value = parseTocFromMarkdown(content)
+  
+  // 初始化展开状态：保留已有状态
+  const newExpandedMap = new Map<string, boolean>()
+  tocItems.value.forEach((item) => {
+    if (expandedMap.value.has(item.id)) {
+      newExpandedMap.set(item.id, expandedMap.value.get(item.id)!)
+    }
+  })
+  expandedMap.value = newExpandedMap
 }
 
-// 切换层级展开/收起
-function toggleLevel(level: number) {
-  if (expandedLevels.value.has(level)) {
-    expandedLevels.value.delete(level)
+// 获取某项的父级索引
+function getParentIndex(index: number): number {
+  if (index < 0 || index >= tocItems.value.length) {
+    return -1
   }
-  else {
-    expandedLevels.value.add(level)
+  const currentItem = tocItems.value[index]
+  // 从当前项往前找，找到第一个级别比当前项小的项
+  for (let i = index - 1; i >= 0; i--) {
+    const prevItem = tocItems.value[i]
+    if (prevItem && prevItem.level < currentItem.level) {
+      return i
+    }
   }
-  expandedLevels.value = new Set(expandedLevels.value)
+  return -1 // 没有父级
 }
 
-// 检查层级是否展开
-function isLevelExpanded(level: number): boolean {
-  return expandedLevels.value.has(level)
+// 切换某项的展开/收起状态
+function toggleItem(index: number) {
+  if (index < 0 || index >= tocItems.value.length) return
+  const itemId = tocItems.value[index].id
+  const isExpanded = expandedMap.value.get(itemId) ?? true // 默认展开
+  expandedMap.value.set(itemId, !isExpanded)
+  expandedMap.value = new Map(expandedMap.value)
+}
+
+// 检查某项是否展开
+function isItemExpanded(index: number): boolean {
+  if (index < 0 || index >= tocItems.value.length) return true
+  const itemId = tocItems.value[index].id
+  return expandedMap.value.get(itemId) ?? true // 默认展开
 }
 
 // 判断某一项是否应该显示（检查所有父级是否都展开）
 function shouldShowItem(item: TocItem, index: number): boolean {
+  // 安全检查
+  if (!item || index < 0 || index >= tocItems.value.length) {
+    return false
+  }
+
   // 如果是顶级标题（h1），始终显示
   if (item.level === 1) {
     return true
   }
-  
-  // 检查所有父级是否都展开
-  for (let i = index - 1; i >= 0; i--) {
-    const parentItem = tocItems.value[i]
-    // 找到最近的父级（级别比当前项小的第一项）
-    if (parentItem.level < item.level) {
-      // 如果这个父级是 h1 或 h2，检查对应的层级是否展开
-      if (parentItem.level <= 2) {
-        if (!expandedLevels.value.has(parentItem.level + 1)) {
-          return false
-        }
-      }
-      // 递归检查更高级的父级
-      if (parentItem.level > 1) {
-        return shouldShowItem(parentItem, i)
-      }
+
+  // 收集所有父级索引
+  const parentIndices: number[] = []
+  let currentIndex = index
+
+  while (true) {
+    const parentIndex = getParentIndex(currentIndex)
+    if (parentIndex === -1) {
       break
     }
+    parentIndices.push(parentIndex)
+    currentIndex = parentIndex
   }
-  
+
+  // 检查所有父级是否都展开（默认展开）
+  for (const parentIndex of parentIndices) {
+    const parentItemId = tocItems.value[parentIndex].id
+    const isExpanded = expandedMap.value.get(parentItemId) ?? true
+    if (!isExpanded) {
+      return false
+    }
+  }
+
   return true
+}
+
+// 判断某项是否有子项（后面有级别比它大的项）
+function hasChildren(index: number): boolean {
+  if (index < 0 || index >= tocItems.value.length - 1) return false
+  const currentItem = tocItems.value[index]
+  // 检查下一项的级别是否比当前项大
+  return tocItems.value[index + 1]?.level > currentItem.level
 }
 
 // 跳转到指定标题
@@ -174,23 +215,25 @@ const hasContent = computed(() => tocItems.value.length > 0)
         </div>
         <div class="border-border rounded-md border bg-card p-3">
           <div v-if="hasContent" class="space-y-1">
-            <div v-for="(item, index) in tocItems" :key="item.id"
-              class="toc-item hover:bg-muted/50 cursor-pointer rounded px-2 py-1.5 text-sm transition-colors"
-              :style="{ paddingLeft: `${item.indent * 12 + 8}px` }" @click="scrollToHeading(index)">
-              <div class="flex items-center gap-1">
-                <button v-if="shouldShowItem(item, index) && item.level <= 2 && tocItems[index + 1]?.level > item.level"
-                  class="text-muted-foreground hover:text-foreground flex h-4 w-4 items-center justify-center rounded transition-colors"
-                  @click.stop="toggleLevel(item.level + 1)">
-                  <ChevronDown v-if="isLevelExpanded(item.level + 1)" class="h-3 w-3" />
-                  <ChevronRight v-else class="h-3 w-3" />
-                </button>
-                <span class="truncate" :class="{
+            <template v-for="(item, index) in tocItems" :key="item.id">
+              <div v-if="shouldShowItem(item, index)"
+                class="toc-item hover:bg-muted/50 cursor-pointer rounded px-2 py-1.5 text-sm transition-colors"
+                :style="{ paddingLeft: `${item.indent * 12 + 8}px` }" @click="scrollToHeading(index)">
+                <div class="flex items-center gap-1">
+                  <button v-if="hasChildren(index)"
+                    class="text-muted-foreground hover:text-foreground flex h-4 w-4 items-center justify-center rounded transition-colors"
+                    @click.stop="toggleItem(index)">
+                    <ChevronDown v-if="isItemExpanded(index)" class="h-3 w-3" />
+                    <ChevronRight v-else class="h-3 w-3" />
+                  </button>
+                  <span class="truncate" :class="{
     'text-muted-foreground': item.level > 3,
-  }" v-show="shouldShowItem(item, index)">
-                  {{ item.text }}
-                </span>
+  }">
+                    {{ item.text }}
+                  </span>
+                </div>
               </div>
-            </div>
+            </template>
           </div>
         </div>
       </div>
