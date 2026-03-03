@@ -348,6 +348,7 @@ defineExpose({
       @cancel="handleAICancel"
       @close="closeDialog"
       @insert-content="handleInsertContent"
+      @clear-citations="clearCitations"
     />
   </div>
 </template>

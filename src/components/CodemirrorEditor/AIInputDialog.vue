@@ -12,6 +12,7 @@ const emit = defineEmits<{
   'cancel': []
   'close': []
   'insertContent': [value: string]
+  'clearCitations': []
 }>()
 
 // 状态管理
@@ -156,5 +157,6 @@ defineExpose({
     @cancel="emit('cancel')"
     @close="emit('close')"
     @insert-content="handleInsertContent($event)"
+    @clear-citations="emit('clearCitations')"
   />
 </template>

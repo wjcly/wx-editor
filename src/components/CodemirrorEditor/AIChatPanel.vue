@@ -19,6 +19,7 @@ const emit = defineEmits<{
   'cancel': []
   'close': []
   'insertContent': [content: string]
+  'clearCitations': []
 }>()
 
 // 状态管理
@@ -117,6 +118,9 @@ async function createNewSession() {
   currentSessionId.value = newSession.id
   resetChatState()
   await saveSessions()
+
+  // 通知父组件清空引文
+  emit('clearCitations')
 }
 
 // 切换会话
