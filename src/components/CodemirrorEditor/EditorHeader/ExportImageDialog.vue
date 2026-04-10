@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import html2canvas from 'html2canvas'
+import { toPng } from 'html-to-image'
+import mermaid from 'mermaid'
 import { ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -22,78 +23,60 @@ async function handleExport() {
   exportProgress.value = 0
 
   try {
-    // 获取整个预览 wrapper（包含背景色）
-    const previewWrapper = document.querySelector(`.preview-wrapper`) as HTMLElement
-    if (!previewWrapper) {
+    const outputWrapper = document.querySelector(`#output-wrapper`) as HTMLElement
+    if (!outputWrapper) {
       throw new Error(`预览区域不存在`)
     }
 
-    // 设置进度
-    exportProgress.value = 30
+    exportProgress.value = 10
 
-    // 保存原始样式和状态
-    const originalStyle = previewWrapper.style.cssText
-    // 检查当前是否是 dark 模式
+    const originalStyle = outputWrapper.style.cssText
     const isDark = document.body.classList.contains(`dark`)
 
     try {
-      // 获取预览区域的实际宽度
-      const previewWidth = previewWrapper.offsetWidth
+      outputWrapper.style.height = `auto`
+      outputWrapper.style.overflow = `visible`
 
-      // 临时修改样式以捕获完整内容
-      previewWrapper.style.height = `auto`
-      previewWrapper.style.overflow = `visible`
+      console.log(`步骤 1: 处理 Mermaid 图表...`)
+      exportProgress.value = 20
 
-      // 配置 html2canvas 选项
-      const scale = imageQuality.value === `1` ? 1 : imageQuality.value === `2` ? 2 : 3
+      // 关键：重新渲染所有 Mermaid 图表为超高分辨率 PNG
+      await convertAllMermaidToHighRes(outputWrapper)
 
-      const canvas = await html2canvas(previewWrapper, {
-        scale,
-        useCORS: true,
-        allowTaint: true,
+      console.log(`步骤 2: 等待字体和图像加载...`)
+      exportProgress.value = 40
+
+      // 等待字体加载完成（参考 mermaid-plus-cli 的关键步骤）
+      await document.fonts.ready
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      const outputWidth = outputWrapper.offsetWidth
+      const outputHeight = outputWrapper.scrollHeight
+
+      console.log(`步骤 3: 开始渲染，尺寸: ${outputWidth}x${outputHeight}`)
+      exportProgress.value = 50
+
+      const pixelRatio = imageQuality.value === `1` ? 2 : imageQuality.value === `2` ? 3 : 5
+
+      const dataUrl = await toPng(outputWrapper, {
+        pixelRatio,
         backgroundColor: isDark ? `#1a1a1a` : `#ffffff`,
-        logging: false,
-        // 使用预览区域的实际宽度
-        width: previewWidth,
-        windowHeight: previewWrapper.scrollHeight,
-        // 在克隆的文档中应用 dark 类和样式
-        onclone: (clonedDoc) => {
-          // 复制原页面的所有 style 标签
-          const styles = document.querySelectorAll(`style`)
-          styles.forEach((style) => {
-            const clonedStyle = clonedDoc.createElement(`style`)
-            clonedStyle.textContent = style.textContent
-            clonedDoc.head.appendChild(clonedStyle)
-          })
-
-          // 复制原页面的所有 link 标签（CSS 文件）
-          const links = document.querySelectorAll(`link[rel="stylesheet"]`)
-          links.forEach((link) => {
-            const clonedLink = clonedDoc.createElement(`link`)
-            clonedLink.rel = `stylesheet`
-            clonedLink.href = (link as HTMLLinkElement).href
-            clonedDoc.head.appendChild(clonedLink)
-          })
-
-          // 添加 dark 类到克隆的 body
-          if (isDark) {
-            clonedDoc.body.classList.add(`dark`)
-          }
-        },
+        width: outputWidth,
+        height: outputHeight,
+        skipAutoScale: true,
+        quality: 1.0,
       })
 
-      exportProgress.value = 80
+      console.log(`步骤 4: 下载图片...`)
+      exportProgress.value = 90
 
-      // 转换为图片
-      const imgData = canvas.toDataURL(`image/${imageFormat.value}`, 1.0)
-
-      // 创建下载链接
       const link = document.createElement(`a`)
       link.download = `markdown_export_${Date.now()}.${imageFormat.value}`
-      link.href = imgData
+      link.href = dataUrl
       link.click()
 
       exportProgress.value = 100
+      console.log(`导出完成`)
       setTimeout(() => {
         emit(`update:show`, false)
         isExporting.value = false
@@ -101,14 +84,140 @@ async function handleExport() {
       }, 500)
     }
     finally {
-      // 恢复原始状态
-      previewWrapper.style.cssText = originalStyle
+      outputWrapper.style.cssText = originalStyle
     }
   }
   catch (error) {
     console.error(`导出图片失败:`, error)
     isExporting.value = false
     exportProgress.value = 0
+  }
+}
+
+/**
+ * 将容器中所有 Mermaid 图表重新渲染为超高分辨率 PNG
+ * 参考 mermaid-plus-cli 的实现方式
+ */
+async function convertAllMermaidToHighRes(container: HTMLElement): Promise<void> {
+  const mermaidPres = container.querySelectorAll(`pre.mermaid`)
+  const conversions: Array<Promise<void>> = []
+
+  for (const pre of mermaidPres) {
+    const mermaidCode = pre.textContent?.trim()
+    if (!mermaidCode) continue
+
+    conversions.push(convertMermaidToHighRes(pre, mermaidCode))
+  }
+
+  if (conversions.length > 0) {
+    await Promise.all(conversions)
+  }
+}
+
+/**
+ * 将单个 Mermaid 图表转换为超高分辨率 PNG
+ * 核心步骤：
+ * 1. 使用 mermaid.render() 重新渲染为 SVG（确保字体和样式正确）
+ * 2. 等待字体加载完成
+ * 3. 使用 Canvas 以超高分辨率渲染 SVG
+ * 4. 转换为 PNG 并替换原元素
+ */
+async function convertMermaidToHighRes(preElement: Element, mermaidCode: string): Promise<void> {
+  try {
+    // 生成唯一 ID
+    const chartId = `mermaid-export-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+    // 重新渲染为 SVG（这是关键 - 不是使用已渲染的，而是重新渲染）
+    const { svg } = await mermaid.render(chartId, mermaidCode)
+
+    // 创建临时容器渲染 SVG
+    const tempDiv = document.createElement(`div`)
+    tempDiv.style.cssText = `position: absolute; left: -9999px; top: 0; visibility: hidden;`
+    tempDiv.innerHTML = svg
+    document.body.appendChild(tempDiv)
+
+    // 等待字体加载（参考 mermaid-plus-cli 的 font-timeout 概念）
+    await document.fonts.ready
+    await new Promise(resolve => setTimeout(resolve, 300))
+
+    const svgElement = tempDiv.querySelector(`svg`) as SVGElement
+    if (!svgElement) {
+      document.body.removeChild(tempDiv)
+      return
+    }
+
+    // 获取 SVG 实际尺寸
+    const rect = svgElement.getBoundingClientRect()
+    const width = rect.width || 800
+    const height = rect.height || 600
+
+    // 确定输出分辨率（3x/5x/8x）
+    const scale = imageQuality.value === `1` ? 3 : imageQuality.value === `2` ? 5 : 8
+
+    console.log(`  Mermaid 图表: ${Math.round(width)}x${Math.round(height)} → ${Math.round(width * scale)}x${Math.round(height * scale)}`)
+
+    // 创建超高分辨率 Canvas
+    const canvas = document.createElement(`canvas`)
+    canvas.width = Math.round(width * scale)
+    canvas.height = Math.round(height * scale)
+    const ctx = canvas.getContext(`2d`, { alpha: false })
+
+    if (!ctx) {
+      document.body.removeChild(tempDiv)
+      return
+    }
+
+    // 白色背景
+    ctx.fillStyle = `#ffffff`
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+    // 克隆 SVG 并设置明确尺寸
+    const svgClone = svgElement.cloneNode(true) as SVGElement
+    svgClone.setAttribute(`width`, String(width))
+    svgClone.setAttribute(`height`, String(height))
+
+    // 序列化并创建 Blob
+    const svgData = new XMLSerializer().serializeToString(svgClone)
+    const svgBlob = new Blob([svgData], { type: `image/svg+xml;charset=utf-8` })
+    const url = URL.createObjectURL(svgBlob)
+
+    // 加载 SVG 并绘制到 Canvas
+    await new Promise<void>((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        ctx.imageSmoothingEnabled = true
+        ctx.imageSmoothingQuality = `high`
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        URL.revokeObjectURL(url)
+        document.body.removeChild(tempDiv)
+        resolve()
+      }
+      img.onerror = () => {
+        console.error(`Failed to load SVG for conversion`)
+        URL.revokeObjectURL(url)
+        document.body.removeChild(tempDiv)
+        resolve()
+      }
+      img.src = url
+    })
+
+    // 转换为 PNG Data URL
+    const pngDataUrl = canvas.toDataURL(`image/png`, 1.0)
+
+    // 创建 img 元素替换原元素
+    const imgElement = document.createElement(`img`)
+    imgElement.src = pngDataUrl
+    imgElement.alt = `Mermaid Diagram`
+    imgElement.style.cssText = `width: ${width}px; height: ${height}px; max-width: 100%; display: block; margin: 1em auto;`
+
+    const wrapper = document.createElement(`div`)
+    wrapper.style.cssText = `text-align: center; margin: 1em 0; padding: 10px;`
+    wrapper.appendChild(imgElement)
+
+    preElement.parentNode?.replaceChild(wrapper, preElement)
+  }
+  catch (error) {
+    console.error(`转换 Mermaid 图表失败:`, error)
   }
 }
 </script>

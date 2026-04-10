@@ -1,17 +1,20 @@
 import mermaid from 'mermaid'
 import { WechatPostService } from '@/utils/wechatPostService'
 
-// 初始化Mermaid配置
+// 初始化Mermaid配置（最高质量）
 mermaid.initialize({
   startOnLoad: false,
   theme: `default`,
   securityLevel: `loose`, // 允许内联样式
-  fontFamily: `Arial`,
-  fontSize: 16, // 增大字体以提高清晰度
+  fontFamily: `Arial, sans-serif`,
+  fontSize: 18, // 增大字体以提高清晰度（从16增加到18）
   flowchart: {
     useMaxWidth: true,
     htmlLabels: true,
     curve: `basis`, // 使用更平滑的曲线
+    padding: 20, // 增加内边距
+    nodeSpacing: 50, // 增加节点间距
+    rankSpacing: 50, // 增加层级间距
   },
   sequence: {
     diagramMarginX: 50,
@@ -20,16 +23,17 @@ mermaid.initialize({
     noteMargin: 10,
     messageMargin: 35,
     mirrorActors: true,
+    fontSize: 18, // 增大时序图字体
   },
   gantt: {
     titleTopMargin: 25,
-    barHeight: 20,
-    barGap: 4,
+    barHeight: 25, // 增加条形图高度
+    barGap: 6, // 增加间距
     topPadding: 50,
     rightPadding: 75,
     leftPadding: 75,
     gridLineStartPadding: 3.5,
-    fontSize: 11,
+    fontSize: 14, // 增大甘特图字体（从11增加到14）
     numberSectionStyles: 4,
     axisFormat: `%Y-%m-%d`,
   },
@@ -37,6 +41,8 @@ mermaid.initialize({
   altFontFamily: `sans-serif`,
   deterministicIds: true,
   maxTextSize: 99999,
+  // 提高 SVG 输出质量
+  logLevel: 0, // 禁用日志以提高性能
 })
 
 /**
@@ -64,54 +70,91 @@ async function renderMermaidToSvg(mermaidCode: string): Promise<string> {
 }
 
 /**
- * 将SVG转换为PNG格式的Blob
+ * 将SVG转换为PNG格式的Blob（最高质量）
+ * 参考 mermaid-plus-cli 的实现：使用超高分辨率 Canvas 渲染
  * @param svg SVG字符串
  * @returns PNG格式的Blob对象
  */
 async function svgToPngBlob(svg: string): Promise<Blob> {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     try {
-      // 创建一个临时的img元素来加载SVG
-      const img = new Image()
-      // 添加时间戳避免缓存问题
-      const svgUrl = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}#${Date.now()}`
+      // 创建临时容器渲染 SVG
+      const tempDiv = document.createElement(`div`)
+      tempDiv.style.cssText = `position: absolute; left: -9999px; top: 0; visibility: hidden;`
+      tempDiv.innerHTML = svg
+      document.body.appendChild(tempDiv)
 
+      // 等待字体加载完成
+      await document.fonts.ready
+
+      const svgElement = tempDiv.querySelector(`svg`) as SVGElement
+      if (!svgElement) {
+        document.body.removeChild(tempDiv)
+        reject(new Error(`SVG元素不存在`))
+        return
+      }
+
+      // 获取 SVG 的 viewBox 属性（这是最准确的尺寸来源）
+      const viewBox = svgElement.getAttribute(`viewBox`)
+      let width: number
+      let height: number
+
+      if (viewBox) {
+        const parts = viewBox.split(/\s+/)
+        width = parseFloat(parts[2]) || 800
+        height = parseFloat(parts[3]) || 600
+      }
+      else {
+        const styleWidth = svgElement.style.width
+        const styleHeight = svgElement.style.height
+        width = parseFloat(styleWidth) || parseFloat(svgElement.getAttribute(`width`) || `800`)
+        height = parseFloat(styleHeight) || parseFloat(svgElement.getAttribute(`height`) || `600`)
+      }
+
+      // 2x 分辨率（速度和质量的平衡）
+      const scaleFactor = 2
+
+      // 克隆 SVG 并设置明确尺寸
+      const svgClone = svgElement.cloneNode(true) as SVGElement
+      svgClone.setAttribute(`width`, String(width))
+      svgClone.setAttribute(`height`, String(height))
+
+      // 确保 viewBox 存在
+      if (!svgClone.getAttribute(`viewBox`)) {
+        svgClone.setAttribute(`viewBox`, `0 0 ${width} ${height}`)
+      }
+
+      // 序列化并创建 Data URL（避免 Blob URL 导致 canvas 被污染）
+      const svgData = new XMLSerializer().serializeToString(svgClone)
+      const svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgData)}`
+
+      document.body.removeChild(tempDiv)
+
+      const img = new Image()
       img.onload = () => {
-        // 创建canvas来将SVG渲染为PNG
+        // 创建高分辨率 Canvas
         const canvas = document.createElement(`canvas`)
-        const ctx = canvas.getContext(`2d`)
+        canvas.width = Math.round(width * scaleFactor)
+        canvas.height = Math.round(height * scaleFactor)
+        const ctx = canvas.getContext(`2d`, { alpha: false })
 
         if (!ctx) {
           reject(new Error(`无法获取canvas上下文`))
           return
         }
 
-        // 设置更高分辨率以提高清晰度
-        const scaleFactor = 2 // 2倍分辨率
-        const targetWidth = img.width || 800
-        const targetHeight = img.height || 600
+        // 白色背景
+        ctx.fillStyle = `#ffffff`
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-        // 设置canvas的内部尺寸为高分辨率
-        canvas.width = targetWidth * scaleFactor
-        canvas.height = targetHeight * scaleFactor
-
-        // 设置canvas的显示尺寸
-        canvas.style.width = `${targetWidth}px`
-        canvas.style.height = `${targetHeight}px`
-
-        // 缩放绘图上下文以提高清晰度
-        ctx.scale(scaleFactor, scaleFactor)
-
-        // 设置绘图参数以提高质量
+        // 高质量平滑
         ctx.imageSmoothingEnabled = true
         ctx.imageSmoothingQuality = `high`
 
-        // 绘制SVG到canvas
-        ctx.fillStyle = `white` // 设置背景色为白色
-        ctx.fillRect(0, 0, targetWidth, targetHeight)
-        ctx.drawImage(img, 0, 0, targetWidth, targetHeight)
+        // 绘制图像
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
 
-        // 转换为PNG Blob
+        // 转换为最高质量 PNG
         canvas.toBlob((blob) => {
           if (blob) {
             resolve(blob)
@@ -119,14 +162,14 @@ async function svgToPngBlob(svg: string): Promise<Blob> {
           else {
             reject(new Error(`Canvas toBlob失败`))
           }
-        }, `image/png`, 1.0) // 使用1.0质量以获得最高质量
+        }, `image/png`, 1.0)
       }
 
       img.onerror = (error) => {
         reject(new Error(`SVG加载失败: ${error instanceof Error ? error.message : String(error)}`))
       }
 
-      img.src = svgUrl
+      img.src = svgDataUrl
     }
     catch (error) {
       reject(new Error(`SVG转PNG失败: ${error instanceof Error ? error.message : String(error)}`))

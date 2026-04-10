@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BarChart3, ChevronRight, Code, Heading1, Image, Indent, Link, Monitor, Palette, RotateCcw, SwatchBook, Type } from 'lucide-vue-next'
+import { BarChart3, ChevronRight, Code, Heading1, Image, Indent, Link, Monitor, Palette, SwatchBook, Type } from 'lucide-vue-next'
 import { shallowRef } from 'vue'
 import PickColors, { type Format } from 'vue-pick-colors'
 import {
@@ -66,49 +66,17 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
       样式
     </MenubarTrigger>
     <MenubarContent class="w-56" align="start">
-      <StyleOptionMenu
-        title="主题"
-        :options="themeOptions"
-        :current="theme"
-        :change="themeChanged"
-        :icon="SwatchBook"
-      />
+      <StyleOptionMenu title="主题" :options="themeOptions" :current="theme" :change="themeChanged" :icon="SwatchBook" />
       <MenubarSeparator />
-      <StyleOptionMenu
-        title="字体"
-        :options="fontFamilyOptions"
-        :current="fontFamily"
-        :change="fontChanged"
-        :icon="Type"
-      />
-      <StyleOptionMenu
-        title="字号"
-        :options="fontSizeOptions"
-        :current="fontSize"
-        :change="sizeChanged"
-        :icon="Heading1"
-      />
-      <StyleOptionMenu
-        title="主题色"
-        :options="colorOptions"
-        :current="primaryColor"
-        :change="colorChanged"
-        :icon="Palette"
-      />
-      <StyleOptionMenu
-        title="图注格式"
-        :options="legendOptions"
-        :current="legend"
-        :change="legendChanged"
-        :icon="Image"
-      />
-      <StyleOptionMenu
-        title="代码块主题"
-        :options="codeBlockThemeOptions"
-        :current="codeBlockTheme"
-        :change="codeBlockThemeChanged"
-        :icon="Code"
-      />
+      <StyleOptionMenu title="字体" :options="fontFamilyOptions" :current="fontFamily" :change="fontChanged"
+        :icon="Type" />
+      <StyleOptionMenu title="字号" :options="fontSizeOptions" :current="fontSize" :change="sizeChanged"
+        :icon="Heading1" />
+      <StyleOptionMenu title="主题色" :options="colorOptions" :current="primaryColor" :change="colorChanged"
+        :icon="Palette" />
+      <StyleOptionMenu title="图注格式" :options="legendOptions" :current="legend" :change="legendChanged" :icon="Image" />
+      <StyleOptionMenu title="代码块主题" :options="codeBlockThemeOptions" :current="codeBlockTheme"
+        :change="codeBlockThemeChanged" :icon="Code" />
       <MenubarItem @click.self.prevent="showPicker">
         <Palette class="mr-2 h-4 w-4" />
         <span class="flex-1">自定义主题色</span>
@@ -118,14 +86,9 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
           </HoverCardTrigger>
           <HoverCardContent side="right" class="w-min">
             <div ref="pickColorsContainer">
-              <PickColors
-                v-model:value="primaryColor"
-                show-alpha
-                :format="format" :format-options="formatOptions"
-                :theme="store.isDark ? 'dark' : 'light'"
-                :popup-container="pickColorsContainer ?? undefined"
-                @change="store.colorChanged"
-              />
+              <PickColors v-model:value="primaryColor" show-alpha :format="format" :format-options="formatOptions"
+                :theme="store.isDark ? 'dark' : 'light'" :popup-container="pickColorsContainer ?? undefined"
+                @change="store.colorChanged" />
             </div>
           </HoverCardContent>
         </HoverCard>
